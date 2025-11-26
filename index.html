@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PAUD — Aplikasi Mobile Final (Jati Diri)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root{
+    --orange:#FFA726; --yellow:#FFD54F; --green:#81C784; --blue:#4FC3F7;
+    --card:#FFFDE7; --muted:#666; --radius:14px;
+  }
+  /* base */
+  body{margin:0;font-family:Inter, Poppins, Arial, sans-serif;background:linear-gradient(135deg,var(--yellow),var(--orange));-webkit-font-smoothing:antialiased;color:#222}
+  header{background:linear-gradient(90deg,var(--orange),#FB8C00);color:#fff;padding:12px 14px;display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:100000}
+  header h1{font-size:18px;margin:0;font-weight:700}
+  .btn{background:linear-gradient(135deg,var(--orange),#FB8C00);color:#fff;padding:8px 12px;border-radius:999px;border:none;font-weight:700;display:inline-flex;gap:8px;align-items:center}
+  .btn.secondary{background:linear-gradient(135deg,var(--blue),#29B6F6)}
+  .container{padding:14px}
+  .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);position:relative}
+  .small{font-size:13px;color:var(--muted)}
+  .dnd-item{padding:10px;background:#fff;border-radius:10px;margin:6px 0;border:1px solid #eee}
+  .dnd-target{padding:12px;background:#f8f8f8;border-radius:10px;margin:6px 0;border:2px dashed #e0e0e0}
+  .result-badge{padding:10px;border-radius:10px;background:#E8F5E9;border:2px solid #C8E6C9;display:inline-block}
+  .video-row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .video-title{flex:1;margin-right:8px}
+  .icon-btn{background:transparent;border:none;color:#333;font-size:18px;padding:8px}
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:120}
+  .modal{background:#fff;border-radius:12px;padding:14px;max-width:520px;width:92%}
+  label{display:block;font-weight:600;font-size:13px;margin-top:8px}
+  input[type="text"], input[type="url"]{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-top:6px}
+  .actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+  iframe{width:100%;height:220px;border-radius:10px;border:0;position:relative}
+  button:focus,input:focus,textarea:focus{outline:3px solid rgba(255,200,60,0.22);outline-offset:3px}
+  @media(min-width:720px){ iframe{height:300px} }
+
+  /* MENU (mobile) */
+  #menu{display:none;padding:10px;background:linear-gradient(180deg,var(--blue),var(--green));color:#fff;position:fixed;left:0;top:56px;width:320px;height:calc(100vh - 56px);z-index:200000;box-shadow:0 12px 30px rgba(0,0,0,0.3);overflow:auto}
+
+  /* FIX: prevent iframe blocking menu (default none; only enable when playing) */
+  iframe { pointer-events: none; z-index:1; }
+  .video-playing iframe { pointer-events: auto; z-index:5; }
+
+  /* ensure menu always top */
+  #menu { z-index:200000 !important; }
+
+  /* make sure cards and content not overlap menu */
+  .container, .card { position: relative; z-index: 10; }
+
+  /* small visual tweaks */
+  .match-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:12px}
+  .match-card{padding:14px;text-align:center;background:white;border-radius:12px;border:2px solid transparent;cursor:pointer;transition:0.12s}
+  .match-card.sel{border-color:var(--yellow)}
+  .match-card.done{opacity:0.5;border-color:var(--green)}
+</style>
+</head>
+<body>
+
+<header>
+  <button id="menuBtn" class="btn" aria-label="Buka menu" onclick="showMenu()"><i class="fa-solid fa-bars"></i></button>
+  <h1>PAUD — Jati Diri (Mobile Final)</h1>
+</header>
+
+<div id="menu" aria-hidden="true">
+  <div style="padding:12px 10px">
+    <div style="font-weight:800;font-size:18px;margin-bottom:10px">Menu</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn" style="width:100%" onclick="openTab('home'); hideMenu()">Beranda</button>
+      <button class="btn" style="width:100%" onclick="openTab('bab1'); hideMenu()">Bab 1 — Pengenalan</button>
+      <button class="btn" style="width:100%" onclick="openTab('bab2'); hideMenu()">Bab 2 — Elemen Jati Diri</button>
+      <button class="btn" style="width:100%" onclick="openTab('bab3'); hideMenu()">Bab 3 — Merancang Pembelajaran</button>
+      <button class="btn" style="width:100%" onclick="openTab('quiz'); hideMenu()">Quiz</button>
+      <button class="btn secondary" style="width:100%" onclick="openTab('interactive'); hideMenu()">Latihan Interaktif</button>
+      <button class="btn secondary" style="width:100%" onclick="openTab('media'); hideMenu()">Media Pembelajaran</button>
+    </div>
+    <div style="margin-top:12px;font-size:13px;opacity:0.95">Perubahan video disimpan di perangkat (localStorage).</div>
+  </div>
+</div>
+
+<div class="container" id="app">
+
+  <section id="home" class="card" role="region" aria-labelledby="homeTitle">
+    <h2 id="homeTitle">Selamat datang</h2>
+    <p class="small">Aplikasi PAUD — materi lengkap untuk penguatan Jati Diri. Gunakan menu untuk navigasi dan tambahkan media pembelajaran sesuai kebutuhan.</p>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="playSpeech('Halo adik adik, selamat belajar!')"><i class="fa-solid fa-play"></i> Baca</button>
+      <button class="btn secondary" onclick="openTab('interactive')">Mulai Latihan</button>
+    </div>
+  </section>
+
+  <section id="bab1" class="card" style="display:none">
+    <h2>Bab 1 — Pengenalan Jati Diri</h2>
+    <p><strong>Pengertian:</strong> Jati diri adalah kesadaran mengenai siapa diri anak—nama, usia, preferensi, kemampuan, dan peran sosial. Pembentukan jati diri melibatkan aspek afektif, kognitif, sosial, dan motorik.</p>
+    <h3>Tujuan Pembelajaran</h3>
+    <ol>
+      <li>Mampu menyebutkan identitas diri (nama, usia, keluarga)</li>
+      <li>Mengenali emosi dasar dan mengekspresikannya dengan tepat</li>
+      <li>Mengembangkan keterampilan motorik yang mendukung eksplorasi</li>
+      <li>Menghargai perbedaan dan memahami peran dalam komunitas</li>
+    </ol>
+    <h3>Peran Guru</h3>
+    <p>Guru memberikan lingkungan aman, tugas eksploratif, contoh perilaku positif, serta memberi dukungan untuk interaksi sosial yang sehat.</p>
+    <h3>Kegiatan Contoh</h3>
+    <ul>
+      <li>Permainan perkenalan nama dan keluarga</li>
+      <li>Aktivitas menggambar diri</li>
+      <li>Bercerita tentang siapa yang membantu di rumah</li>
+    </ul>
+    <button class="btn" onclick="playSpeech('Bab satu membahas pengertian jati diri dan cara guru membimbing anak untuk mengenali dirinya')">Bacakan Bab 1</button>
+  </section>
+
+  <section id="bab2" class="card" style="display:none">
+    <h2>Bab 2 — Elemen Jati Diri (Lengkap)</h2>
+    <p>Elemen Jati Diri merupakan salah satu elemen capaian pembelajaran fase fondasi. Elemen Jati Diri, bersama dengan dua elemen lainnya, membentuk satu capaian pembelajaran yang membina dan mengasah kemampuan fondasi anak usia dini secara utuh.</p>
+    <p>Elemen Nilai Agama dan Budi Pekerti berfokus pada pengenalan dan pembangunan kepercayaan kepada Tuhan YME, pengenalan kepada ajaran pokok sesuai agama dan kepercayaan masing-masing, serta pembangunan kesadaran untuk menjaga dan merawat diri, saling menghargai sesama manusia, dan menghargai alam sebagai bentuk rasa sayang terhadap seluruh ciptaan Tuhan YME.</p>
+    <p>Elemen Jati Diri berfokus pada pengembangan kesadaran anak terhadap identitas dirinya, kepemilikan emosi, dan perkembangan fisik motoriknya agar peserta didik dapat terus mengembangkan diri, memahami perannya pada lingkungannya sehari-hari, serta berinteraksi secara sehat dengan rekan sebaya ataupun orang dewasa di sekitarnya.</p>
+    <p>Elemen Dasar-Dasar Literasi, Matematika, Sains, Teknologi, Rekayasa, dan Seni berfokus pada pengembangan nilai, pengetahuan, dan keterampilan untuk mengasah proses berpikir peserta didik dan mengenali bagaimana dunia bekerja.</p>
+
+    <h3>Proses Pembentukan dan Manfaat</h3>
+    <p>Proses pembentukan jati diri berlangsung seumur hidup. Salah satu fase krusial adalah pada periode anak usia dini. Pembentukan jati diri dapat bersifat negatif dan juga positif. Agar anak memiliki identitas yang sehat, diperlukan pembentukan jati diri yang positif.</p>
+
+    <h4>Manfaat jati diri positif:</h4>
+    <ol>
+      <li><strong>Interaksi dan pengalaman berteman yang positif:</strong> Interaksi ini membantu anak mendapatkan inspirasi dan nilai-nilai positif, melatih pengaturan emosi, kerja sama, dan komunikasi.</li>
+      <li><strong>Interaksi positif dengan orang dewasa:</strong> Orang tua dan guru membantu anak memahami keberhargaan dirinya dan memberikan dukungan emosional.</li>
+      <li><strong>Kegiatan belajar dan bermain yang menyenangkan:</strong> Melalui bermain, anak lebih mudah menangkap nilai pembelajaran sehingga jati diri positif dapat dibangun langsung melalui praktik.</li>
+    </ol>
+
+    <h3>Tahapan Pembentukan Jati Diri Positif</h3>
+    <ol>
+      <li><strong>Mengenal keunikan diri:</strong> Anak belajar memahami ciri fisik dan preferensi dirinya (contoh: menyebutkan nama, anggota keluarga, hal yang disukai).</li>
+      <li><strong>Mengamati kesamaan dengan lingkungan:</strong> Anak mengenali orang atau tempat yang sama di lingkungan sekitar (contoh: menyebut tetangga atau teman yang tinggal di daerah sama).</li>
+      <li><strong>Menyadari identitas kelompok:</strong> Anak mengetahui suku/daerah asal keluarga dan dapat berbagi cerita tentang asal-usulnya.</li>
+      <li><strong>Dukungan lingkungan:</strong> Kegiatan seperti diskusi, tugas yang melibatkan wawancara dengan anggota keluarga, dan presentasi di depan kelas membantu memperkuat proses ini.</li>
+      <li><strong>Membentuk rasa percaya diri:</strong> Anak mampu menyebutkan identitas spesifik seperti nama dan usia, misalnya: “Namaku Putri. Umurku 4 tahun. Rambutku lurus dan hitam.”</li>
+    </ol>
+
+    <h3>Contoh Kegiatan Pembelajaran</h3>
+    <ul>
+      <li>Aktivitas perkenalan nama dengan lagu</li>
+      <li>Permainan meniru ekspresi emosi</li>
+      <li>Proyek kecil: membuat pohon keluarga sederhana</li>
+      <li>Permainan peran: memperagakan kegiatan keluarga</li>
+    </ul>
+  </section>
+
+  <section id="bab3" class="card" style="display:none">
+    <h2>Bab 3 — Merancang Pembelajaran Jati Diri</h2>
+    <h3>Langkah Perencanaan</h3>
+    <ol>
+      <li>Menentukan tujuan pembelajaran yang konkret dan terukur.</li>
+      <li>Memilih bahan dan media yang sesuai usia (gambar, lagu, cerita).</li>
+      <li>Menyusun aktivitas yang melibatkan gerak, dialog, dan refleksi.</li>
+    </ol>
+    <h3>Pelaksanaan</h3>
+    <p>Laksanakan aktivitas dengan variasi peran, pengulangan, dan dukungan guru agar anak merasa aman untuk bereksperimen belajar.</p>
+    <h3>Refleksi dan Asesmen</h3>
+    <p>Gunakan asesmen autentik seperti catatan anekdot, ceklis keterampilan, dan observasi interaksi. Refleksi bersama anak dapat memperkuat pembelajaran.</p>
+    <h3>Contoh Rencana Kegiatan Harian</h3>
+    <ol>
+      <li>Opening (5-10 menit): salam & permainan perkenalan</li>
+      <li>Inti (20 menit): aktivitas eksplorasi diri (menggambar, bercerita)</li>
+      <li>Penutup (10 menit): berbagi hasil & tugas sederhana</li>
+    </ol>
+  </section>
+
+  <section id="quiz" class="card" style="display:none">
+    <h2>Quiz Ringkas</h2>
+    <div id="quizArea"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="checkQuiz()">Cek Jawaban</button>
+      <button class="btn secondary" onclick="renderQuiz()">Ulangi</button>
+    </div>
+    <div id="quizResult" style="margin-top:8px"></div>
+  </section>
+
+  <section id="interactive" class="card" style="display:none">
+    <h2>Latihan Interaktif</h2>
+    <p class="small">Mode mobile: ketuk item lalu ketuk kotak tujuan.</p>
+    <div>
+      <div id="pool">
+        <div class="dnd-item" data-id="nama" onclick="selectPool(this)">Nama</div>
+        <div class="dnd-item" data-id="umur" onclick="selectPool(this)">Umur</div>
+        <div class="dnd-item" data-id="kesukaan" onclick="selectPool(this)">Kesukaan</div>
+        <div class="dnd-item" data-id="kemampuan" onclick="selectPool(this)">Kemampuan</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="dnd-target" data-accept="nama" onclick="placePool(this)">Sebutkan <strong>siapa</strong> kamu</div>
+        <div class="dnd-target" data-accept="umur" onclick="placePool(this)">Sebutkan <strong>berapa</strong> usiamu</div>
+        <div class="dnd-target" data-accept="kesukaan" onclick="placePool(this)">Sebutkan <strong>yang kamu suka</strong></div>
+        <div class="dnd-target" data-accept="kemampuan" onclick="placePool(this)">Sebutkan <strong>yang bisa kamu lakukan</strong></div>
+      </div>
+    </div>
+    <h3 style="margin-top:12px">Cocokkan Kartu</h3>
+    <div class="match-grid" id="matchGrid">
+      <div class="match-card" data-pair="a" onclick="tapMatch(this)">👧 Anak</div>
+      <div class="match-card" data-pair="b" onclick="tapMatch(this)">🏠 Rumah</div>
+      <div class="match-card" data-pair="b" onclick="tapMatch(this)">Rumah</div>
+      <div class="match-card" data-pair="a" onclick="tapMatch(this)">Anak</div>
+    </div>
+    <h3 style="margin-top:12px">Pilih Emosi</h3>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn" onclick="chooseEmoji('😊')">😊 Senang</button>
+      <button class="btn secondary" onclick="chooseEmoji('😢')">😢 Sedih</button>
+      <button class="btn" onclick="chooseEmoji('😡')">😡 Marah</button>
+    </div>
+    <div id="interactiveResult" style="margin-top:10px"></div>
+  </section>
+
+  <section id="media" class="card" style="display:none">
+    <h2>Media Pembelajaran</h2>
+    <p class="small">Tambah video YouTube yang relevan. Data disimpan di perangkat kamu.</p>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="openAddModal()">Tambah Video</button>
+      <button class="btn secondary" onclick="importSample()">Tambah Contoh Otomatis</button>
+    </div>
+    <div id="videosList" style="margin-top:12px"></div>
+  </section>
+
+</div>
+
+<div id="modal" class="modal-back" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal" role="document">
+    <h3 id="modalTitle">Tambah Video</h3>
+    <label for="videoTitle">Judul</label>
+    <input id="videoTitle" type="text" placeholder="Judul video (contoh: Tema Diriku - Identitas)" />
+    <label for="videoUrl">Link YouTube</label>
+    <input id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=XXXX or https://youtu.be/XXXX" />
+    <label for="videoDesc">Deskripsi (opsional)</label>
+    <input id="videoDesc" type="text" placeholder="Deskripsi singkat video" />
+    <div class="actions">
+      <button class="btn secondary" onclick="saveVideo()">Simpan</button>
+      <button class="btn" onclick="closeModal()">Batal</button>
+    </div>
+  </div>
+</div>
+<script>
+/* NAV + MODAL */
+function showMenu(){ var m = document.getElementById('menu'); if (m) { m.style.display = 'block'; m.setAttribute('aria-hidden','false'); } }
+function hideMenu(){ var m = document.getElementById('menu'); if (m) { m.style.display = 'none'; m.setAttribute('aria-hidden','true'); } }
+function openTab(id){ hideMenu(); var sections = document.querySelectorAll('#app > section'); for (var i=0;i<sections.length;i++){ sections[i].style.display='none'; } var sec = document.getElementById(id); if (sec) { sec.style.display='block'; window.scrollTo(0,0); if(id==='quiz') renderQuiz(); if(id==='interactive') initInteractive(); if(id==='media') renderVideos(); } }
+
+openTab('home');
+
+var modalBack = document.getElementById('modal');
+if(modalBack){
+  modalBack.addEventListener('click', function(e){ if(e.target===modalBack) closeModal(); });
+}
+
+/* SPEECH */
+function playSpeech(text){
+  try{
+    if('speechSynthesis' in window){
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang='id-ID';
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }
+  }catch(e){}
+}
+
+/* QUIZ */
+var quizData = [
+  {q:'Apa yang dimaksud jati diri?', opts:['Pemahaman tentang diri','Permainan','Makanan','Angka'], a:0},
+  {q:'Salah satu fungsi pembentukan jati diri adalah...', opts:['Meningkatkan percaya diri','Membuat malas','Membuat lapar','Membuat bingung'], a:0},
+  {q:'Contoh pengelolaan emosi pada anak?', opts:['Menunjukkan perasaan tepat','Berteriak terus','Diam saja selamanya','Mencuri'], a:0},
+  {q:'Fungsi gerak yang digunakan untuk mengeksplorasi disebut?', opts:['Motorik','Matematika','Bahasa','Seni'], a:0}
+];
+var userAnswers = [];
+function renderQuiz(){
+  userAnswers = new Array(quizData.length);
+  var area = document.getElementById('quizArea'); area.innerHTML='';
+  for(var i=0;i<quizData.length;i++){
+    var q = quizData[i];
+    var c = document.createElement('div'); c.className='card';
+    c.innerHTML = '<strong>Soal '+(i+1)+'</strong><div style="margin-top:6px">'+q.q+'</div>';
+    for(var oi=0;oi<q.opts.length;oi++){
+      (function(i,oi){
+        var btn = document.createElement('div'); btn.className='dnd-item'; btn.tabIndex=0; btn.innerText = String.fromCharCode(65+oi)+'. '+q.opts[oi];
+        btn.onclick = function(){ userAnswers[i]=oi; var nodes = c.querySelectorAll('.dnd-item'); for(var n=0;n<nodes.length;n++){ nodes[n].style.opacity = 0.6; } btn.style.opacity = 1; };
+        c.appendChild(btn);
+      })(i,oi);
+    }
+    area.appendChild(c);
+  }
+  document.getElementById('quizResult').innerHTML='';
+}
+function checkQuiz(){
+  for(var i=0;i<userAnswers.length;i++){ if(userAnswers[i] === undefined || userAnswers[i] === null){ alert('Jawab semua soal dulu'); return; } }
+  var s=0;
+  for(var i=0;i<quizData.length;i++){ if(userAnswers[i] === quizData[i].a) s++; }
+  var p = Math.round((s/quizData.length)*100);
+  document.getElementById('quizResult').innerHTML = '<div class="result-badge">Skor: '+s+'/'+quizData.length+' ('+p+'%)</div>';
+  playSpeech(p>=70 ? ('Bagus! Skormu '+p+' persen') : 'Coba lagi ya');
+}
+
+/* INTERACTIVE */
+var poolSelected = null;
+function initInteractive(){
+  poolSelected = null;
+  var poolItems = document.querySelectorAll('.dnd-item');
+  for(var i=0;i<poolItems.length;i++){ poolItems[i].style.opacity = 1; poolItems[i].onclick = (function(el){ return function(){ selectPool(el); }; })(poolItems[i]); }
+  var targets = document.querySelectorAll('.dnd-target');
+  for(var j=0;j<targets.length;j++){ targets[j].dataset.filled=''; targets[j].classList.remove('filled'); targets[j].onclick = (function(t){ return function(){ placePool(t); }; })(targets[j]); }
+  var match = document.querySelectorAll('.match-card');
+  for(var k=0;k<match.length;k++){ match[k].classList.remove('sel','done'); match[k].onclick = (function(c){ return function(){ tapMatch(c); }; })(match[k]); }
+  var ir = document.getElementById('interactiveResult'); if(ir) ir.innerHTML = '';
+}
+function selectPool(el){
+  var items = document.querySelectorAll('.dnd-item');
+  for(var i=0;i<items.length;i++){ items[i].style.borderColor = '#eee'; }
+  poolSelected = el;
+  el.style.borderColor = '#4FC3F7';
+  playSpeech('Dipilih '+el.innerText);
+}
+function placePool(target){
+  if(!poolSelected){ playSpeech('Pilih dulu item'); return; }
+  var id = poolSelected.getAttribute('data-id'), accept = target.getAttribute('data-accept');
+  if(id === accept){
+    target.classList.add('filled');
+    if(!target.dataset.original) target.dataset.original = target.innerHTML;
+    target.innerHTML = '✓ ' + target.dataset.original;
+    poolSelected.style.opacity = 0.4;
+    poolSelected.onclick = null;
+    playSpeech('Betul'); playSound('success');
+  } else {
+    playSpeech('Salah tempat'); playSound('fail');
+  }
+  poolSelected = null;
+}
+var matchFirst = null;
+function tapMatch(card){
+  if(card.classList.contains('done')) return;
+  if(!matchFirst){ matchFirst = card; card.classList.add('sel'); return; }
+  if(matchFirst === card){ matchFirst.classList.remove('sel'); matchFirst = null; return; }
+  if(matchFirst.getAttribute('data-pair') === card.getAttribute('data-pair')){ matchFirst.classList.add('done'); card.classList.add('done'); playSpeech('Pasangan cocok'); playSound('success'); }
+  else { playSpeech('Bukan pasangan'); playSound('fail'); }
+  matchFirst.classList.remove('sel'); matchFirst = null;
+}
+var chosenEmoji = null;
+function chooseEmoji(e){ chosenEmoji = e; var r = document.getElementById('interactiveResult'); if(r) r.innerHTML = '<div class="result-badge">Kamu memilih: <strong>'+e+'</strong></div>'; playSpeech('Kamu memilih ' + (e === '😊' ? 'senang' : (e==='😢' ? 'sedih' : 'marah'))); playSound('success'); }
+function playSound(type){
+  try{
+    var src = (type === 'success') ? 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg' : 'https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg';
+    var a = new Audio(src); a.play();
+  }catch(e){}
+}
+/* MEDIA */
+var STORAGE_KEY = 'paud_media_videos_v3';
+var editIndex = -1;
+function loadVideos(){
+  try{ var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; } catch(e){ return []; }
+}
+function saveVideos(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function renderVideos(){
+  var list = loadVideos();
+  var container = document.getElementById('videosList'); container.innerHTML = '';
+  if(!list || list.length === 0){ container.innerHTML = '<div class="small">Belum ada video. Tekan \"Tambah Video\" untuk menambahkan.</div>'; return; }
+  for(var i=0;i<list.length;i++){
+    (function(i){
+      var v = list[i];
+      var row = document.createElement('div'); row.className = 'card video-row';
+      var title = document.createElement('div'); title.className = 'video-title'; title.innerText = v.title;
+      var controls = document.createElement('div');
+      controls.innerHTML = '<button class="icon-btn" aria-label="play" title="Putar" onclick="playVideo('+i+')"><i class=\"fa-solid fa-play\"></i></button>' +
+                           '<button class="icon-btn" aria-label="edit" title="Edit" onclick="openEditModal('+i+')"><i class=\"fa-solid fa-pen-to-square\"></i></button>' +
+                           '<button class="icon-btn" aria-label="delete" title="Hapus" onclick="deleteVideo('+i+')"><i class=\"fa-solid fa-trash\"></i></button>';
+      row.appendChild(title); row.appendChild(controls);
+      if(v.desc){ var dd = document.createElement('div'); dd.className='small'; dd.style.marginTop='6px'; dd.innerText = v.desc; row.appendChild(dd); }
+      container.appendChild(row);
+    })(i);
+  }
+}
+function openAddModal(){ editIndex = -1; document.getElementById('modalTitle').innerText = 'Tambah Video'; document.getElementById('videoTitle').value=''; document.getElementById('videoUrl').value=''; document.getElementById('videoDesc').value=''; showModal(); }
+function openEditModal(i){ var arr = loadVideos(); var v = arr[i]; if(!v) return; editIndex = i; document.getElementById('modalTitle').innerText = 'Edit Video'; document.getElementById('videoTitle').value = v.title; document.getElementById('videoUrl').value = v.url; document.getElementById('videoDesc').value = v.desc || ''; showModal(); }
+function showModal(){ document.getElementById('modal').style.display = 'flex'; document.getElementById('modal').setAttribute('aria-hidden','false'); document.getElementById('videoTitle').focus(); }
+function closeModal(){ document.getElementById('modal').style.display = 'none'; document.getElementById('modal').setAttribute('aria-hidden','true'); }
+
+function saveVideo(){
+  var title = document.getElementById('videoTitle').value.trim();
+  var url = document.getElementById('videoUrl').value.trim();
+  var desc = document.getElementById('videoDesc') ? document.getElementById('videoDesc').value.trim() : '';
+  if(!title || !url){ alert('Isi judul dan link YouTube'); return; }
+  var id = extractYouTubeID(url);
+  if(!id){ alert('Link YouTube tidak valid'); return; }
+  var arr = loadVideos();
+  var obj = { title: title, url: 'https://www.youtube.com/watch?v='+id, id: id, desc: desc };
+  if(editIndex >= 0) arr[editIndex] = obj; else arr.push(obj);
+  saveVideos(arr);
+  closeModal();
+  renderVideos();
+}
+function deleteVideo(i){ if(!confirm('Hapus video ini?')) return; var arr = loadVideos(); arr.splice(i,1); saveVideos(arr); renderVideos(); }
+
+/* SAFE playVideo: playsinline + enable pointer-events only for playing iframe */
+function playVideo(i){
+  var arr = loadVideos(); var v = arr[i]; if(!v) return;
+  var container = document.getElementById('videosList');
+
+  // remove previous playing wrappers' video-playing class (so previous iframe becomes inert)
+  var prev = container.querySelectorAll('.video-playing');
+  for(var k=0;k<prev.length;k++){ prev[k].classList.remove('video-playing'); }
+
+  var wrapper = document.createElement('div'); wrapper.className='card video-playing';
+  var head = document.createElement('strong'); head.innerText = v.title;
+  wrapper.appendChild(head);
+
+  var divFrame = document.createElement('div'); divFrame.style.marginTop='8px';
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://www.youtube.com/embed/' + v.id + '?playsinline=1&rel=0&modestbranding=1';
+  iframe.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+  iframe.setAttribute('allowfullscreen','true');
+  iframe.style.width='100%'; iframe.style.height='220px'; iframe.style.border='0'; iframe.style.borderRadius='10px';
+
+  divFrame.appendChild(iframe); wrapper.appendChild(divFrame);
+  if(container.firstChild) container.insertBefore(wrapper, container.firstChild); else container.appendChild(wrapper);
+
+  // ensure iframe is enabled (pointer-events) because wrapper has video-playing class
+  window.scrollTo(0,0);
+}
+
+/* robust ID extractor (supports short links, embed, watch and shorts) */
+function extractYouTubeID(url){
+  try{
+    if(!url) return null;
+    // remove surrounding spaces
+    url = url.trim();
+    // shorts
+    if(url.indexOf('shorts/') !== -1){
+      var parts = url.split('shorts/')[1].split(/[?#&]/);
+      if(parts && parts[0]) return parts[0].substr(0,11);
+    }
+    var patterns = [
+      /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/)([A-Za-z0-9_-]{11})/,
+      /v=([A-Za-z0-9_-]{11})/,
+      /youtu\.be\/([A-Za-z0-9_-]{11})/
+    ];
+    for(var i=0;i<patterns.length;i++){
+      var m = url.match(patterns[i]);
+      if(m && m[1]) return m[1];
+    }
+    var u = new URL(url, location.href);
+    var v = u.searchParams.get('v');
+    if(v && v.length>=11) return v;
+    return null;
+  }catch(e){ return null; }
+}
+
+function importSample(){
+  var samples = [
+    {title:'Membangun Jati Diri Anak PAUD', url:'https://www.youtube.com/watch?v=km8JJBt7d3A', id: extractYouTubeID('https://www.youtube.com/watch?v=km8JJBt7d3A'), desc: 'Video komprehensif yang menjelaskan pentingnya pembentukan jati diri, contoh perilaku, dan penguatan dari keluarga & sekolah.'},
+    {title:'Tema Diriku — Identitas Diri (PAUD)', url:'https://www.youtube.com/watch?v=3FJYkc7BLoc', id: extractYouTubeID('https://www.youtube.com/watch?v=3FJYkc7BLoc'), desc: 'Video visual dan aktivitas untuk membantu anak mengenal identitas diri, nama, usia, dan anggota keluarga.'},
+    {title:'Mengenal Diri — PAUD (Animasi)', url:'https://www.youtube.com/watch?v=eHsNIQQ9FYM', id: extractYouTubeID('https://www.youtube.com/watch?v=eHsNIQQ9FYM'), desc: 'Animasi edukatif sederhana yang memudahkan anak memahami identitas dan emosi.'}
+  ];
+  var arr = loadVideos();
+  for(var i=0;i<samples.length;i++){
+    var s = samples[i];
+    if(!arr.find(function(x){ return x.id === s.id; })) arr.push({ title: s.title, url: s.url, id: s.id, desc: s.desc });
+  }
+  saveVideos(arr);
+  renderVideos();
+}
+
+/* INIT */
+document.addEventListener('DOMContentLoaded', function(){
+  importSample();
+  renderVideos();
+  renderQuiz();
+});
+
+/* keyboard: Esc */
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ closeModal(); hideMenu(); } });
+</script>
+
+</body>
+</html>
